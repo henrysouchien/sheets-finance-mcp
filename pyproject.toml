@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sheets-finance-mcp"
+version = "0.1.0"
+description = "MCP server for SheetsFinance formula catalog — search, build, and describe spreadsheet formulas"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["fastmcp", "mcp"]
+
+[project.scripts]
+sheets-finance-mcp = "sheets_finance_mcp.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sheets_finance_mcp*"]
