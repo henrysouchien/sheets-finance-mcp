@@ -9,7 +9,7 @@ description = "MCP server for SheetsFinance formula catalog — search, build, a
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-dependencies = ["fastmcp", "mcp"]
+dependencies = ["fastmcp>=3.1,<4", "mcp>=1.0,<2"]
 
 [project.scripts]
 sheets-finance-mcp = "sheets_finance_mcp.mcp_server:main"
