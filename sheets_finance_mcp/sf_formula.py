@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import difflib
-from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from .sf_catalog import OTHER_FUNCTIONS, SF_CATEGORIES
@@ -47,16 +46,6 @@ NON_US_CURRENCY_NOTE = (
 
 def _closest_matches(value: str, candidates: Iterable[str], n: int = 5) -> List[str]:
     return difflib.get_close_matches(value, list(candidates), n=n)
-
-
-@lru_cache(maxsize=1)
-def _legacy_category_map() -> Dict[str, Tuple[str, str]]:
-    """Map lowercased legacy type names to canonical category and type."""
-    legacy_map: Dict[str, Tuple[str, str]] = {}
-    for category_key, category_def in SF_CATEGORIES.items():
-        for old_type, new_type in category_def.legacy_types.items():
-            legacy_map[old_type.lower()] = (category_key, new_type)
-    return legacy_map
 
 
 def _format_formula_arg(value: Any) -> str:
@@ -110,20 +99,10 @@ def _append_note(payload: Dict[str, Any], note: str) -> None:
 
 def _resolve_category(
     category: str,
-) -> Tuple[Optional[Dict[str, Any]], str, Optional[str], Optional[str]]:
+) -> Tuple[Optional[Dict[str, Any]], str]:
     category_def = SF_CATEGORIES.get(category)
     if category_def:
-        return None, category, None, None
-
-    resolved = _legacy_category_map().get(category.lower())
-    if resolved:
-        resolved_category, resolved_type = resolved
-        return (
-            None,
-            resolved_category,
-            resolved_type,
-            f"'{category}' -> '{resolved_type}'",
-        )
+        return None, category
 
     return (
         {
@@ -132,23 +111,21 @@ def _resolve_category(
             "available_categories": sorted(SF_CATEGORIES.keys()),
         },
         "",
-        None,
-        None,
     )
 
 
 def _validate_sf_metric(
     category: str,
     metric: str,
-) -> Tuple[Optional[Dict[str, Any]], str, Optional[str], Optional[str]]:
-    resolution_error, resolved_category, resolved_type, migration_note = _resolve_category(category)
+) -> Tuple[Optional[Dict[str, Any]], str]:
+    resolution_error, resolved_category = _resolve_category(category)
     if resolution_error:
-        return resolution_error, "", None, None
+        return resolution_error, ""
 
     category_def = SF_CATEGORIES[resolved_category]
 
     if metric == "all":
-        return None, resolved_category, resolved_type, migration_note
+        return None, resolved_category
 
     metrics = [m.name for m in category_def.metrics]
     if metric not in metrics:
@@ -159,11 +136,9 @@ def _validate_sf_metric(
                 "suggestions": _closest_matches(metric, metrics),
             },
             "",
-            None,
-            None,
         )
 
-    return None, resolved_category, resolved_type, migration_note
+    return None, resolved_category
 
 
 def _validate_other_metric(function: str, metric: str) -> Optional[Dict[str, Any]]:
@@ -246,7 +221,7 @@ def sf_formula(
                     "available_categories": sorted(SF_CATEGORIES.keys()),
                 }
 
-            validation_error, resolved_category, resolved_type, migration_note = _validate_sf_metric(
+            validation_error, resolved_category = _validate_sf_metric(
                 parsed_category,
                 parsed_metric,
             )
@@ -254,11 +229,7 @@ def sf_formula(
                 return validation_error
 
             category_def = SF_CATEGORIES[resolved_category]
-            sf_type = (
-                resolved_type
-                if resolved_type
-                else (category_def.type_values[0] if category_def.type_values else resolved_category)
-            )
+            sf_type = category_def.type_values[0] if category_def.type_values else resolved_category
             sf_args: List[Any] = [None, sf_type, parsed_metric]
             if options:
                 sf_args.extend([year, options])
@@ -273,8 +244,6 @@ def sf_formula(
                 "metric": parsed_metric,
                 "notes": "",
             }
-            if migration_note:
-                base["migration_note"] = migration_note
             if len(formulas) == 1:
                 base["formula"] = formulas[0]
             else:
@@ -323,15 +292,7 @@ def sf_describe(target: str) -> Dict[str, Any]:
         return {"status": "error", "error": "target must be a non-empty string"}
 
     normalized = target.strip()
-
     resolved_category = normalized
-    migration_note: Optional[str] = None
-
-    if normalized not in SF_CATEGORIES:
-        legacy = _legacy_category_map().get(normalized.lower())
-        if legacy:
-            resolved_category, resolved_type = legacy
-            migration_note = f"'{normalized}' -> '{resolved_type}'"
 
     if resolved_category in SF_CATEGORIES:
         category = SF_CATEGORIES[resolved_category]
@@ -355,8 +316,6 @@ def sf_describe(target: str) -> Dict[str, Any]:
             "options": category.options,
             "example": category.example,
         }
-        if migration_note:
-            payload["migration_note"] = migration_note
         return payload
 
     function_name = normalized.upper()

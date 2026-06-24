@@ -57,8 +57,6 @@ def _build_index() -> List[Dict[str, Any]]:
 
     for category_name, category in SF_CATEGORIES.items():
         type_hint = _build_type_hint(category.type_values)
-        legacy_type_terms = list(category.legacy_types.keys())
-        legacy_words = [word for legacy in legacy_type_terms for word in _tokenize(legacy)]
         for metric in category.metrics:
             metric_id = f"SF.{category_name}.{metric.name}"
             alias_words = [a for alias in metric.aliases for a in _tokenize(alias)]
@@ -70,8 +68,6 @@ def _build_index() -> List[Dict[str, Any]]:
                 metric.description,
                 *metric.aliases,
                 *alias_words,
-                *legacy_type_terms,
-                *legacy_words,
             ]
             entries.append(
                 {
