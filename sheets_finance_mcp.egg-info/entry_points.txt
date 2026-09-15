@@ -1,2 +1,0 @@
-[console_scripts]
-sheets-finance-mcp = sheets_finance_mcp.mcp_server:main
