@@ -14,8 +14,27 @@ except ImportError:
     from sf_catalog_types import FunctionDef, MetricDef
 
 OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
+    'SF_BROKERAGE': FunctionDef(
+        signature='=SF_BROKERAGE(account, type, metrics, startDate, endDate, txnType, options)',
+        parameters=['account', 'type', 'metrics', 'startDate', 'endDate', 'txnType', 'options'],
+        selector_parameter='type',
+        metrics=[
+            MetricDef(name='holdings', aliases=[], description='', deprecated=False),
+            MetricDef(name='orders', aliases=[], description='', deprecated=False),
+            MetricDef(name='balances', aliases=[], description='', deprecated=False),
+            MetricDef(name='transactions', aliases=[], description='', deprecated=False),
+            MetricDef(name='optionsPositions', aliases=[], description='', deprecated=False),
+        ],
+        example='=SF_BROKERAGE(account, type, metrics, startDate, endDate, txnType, options)',
+        options=['NH'],
+        notes='',
+        periods=[],
+        types=['holdings', 'orders', 'balances', 'transactions', 'optionsPositions'],
+    ),
     'SF_CALENDAR': FunctionDef(
         signature='=SF_CALENDAR(searchTerms, type, startDate, endDate, metrics, options)',
+        parameters=['searchTerms', 'type', 'startDate', 'endDate', 'metrics', 'options'],
+        selector_parameter='type',
         metrics=[
             MetricDef(name='earnings', aliases=[], description='', deprecated=False),
             MetricDef(name='dividends', aliases=[], description='', deprecated=False),
@@ -32,6 +51,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_DIVIDEND': FunctionDef(
         signature='=SF_DIVIDEND(symbol, startDate, endDate, metric, options)',
+        parameters=['symbol', 'startDate', 'endDate', 'metric', 'options'],
+        selector_parameter='metric',
         metrics=[
             MetricDef(name='all', aliases=[], description='', deprecated=False),
             MetricDef(name='date', aliases=[], description='', deprecated=False),
@@ -51,6 +72,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_MAP': FunctionDef(
         signature='=SF_MAP(code, type, filter)',
+        parameters=['code', 'type', 'filter'],
+        selector_parameter='type',
         metrics=[
             MetricDef(name='cusip', aliases=[], description='', deprecated=False),
             MetricDef(name='isin', aliases=[], description='', deprecated=False),
@@ -64,6 +87,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_NEWS': FunctionDef(
         signature='=SF_NEWS(symbol(s), type, limit, metrics, site, startDate, endDate, options)',
+        parameters=['symbol(s)', 'type', 'limit', 'metrics', 'site', 'startDate', 'endDate', 'options'],
+        selector_parameter='metrics',
         metrics=[
             MetricDef(name='all', aliases=[], description='', deprecated=False),
             MetricDef(name='publishedDate', aliases=[], description='', deprecated=False),
@@ -81,6 +106,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_OPTIONS': FunctionDef(
         signature='=SF_OPTIONS(symbol, type, metric, expirationDate, options)',
+        parameters=['symbol', 'type', 'metric', 'expirationDate', 'options'],
+        selector_parameter='metric',
         metrics=[
             MetricDef(name='all', aliases=[], description='', deprecated=False),
             MetricDef(name='contractSymbol', aliases=[], description='', deprecated=False),
@@ -105,8 +132,31 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
         periods=[],
         types=['expirationDates', 'calls', 'puts'],
     ),
+    'SF_OPTIONS_PRO': FunctionDef(
+        signature='=SF_OPTIONS_PRO(symbol, dataType, expirationDate, strike, tradeDate, endDate, metrics, options)',
+        parameters=['symbol', 'dataType', 'expirationDate', 'strike', 'tradeDate', 'endDate', 'metrics', 'options'],
+        selector_parameter='dataType',
+        metrics=[
+            MetricDef(name='calls', aliases=[], description='', deprecated=False),
+            MetricDef(name='puts', aliases=[], description='', deprecated=False),
+            MetricDef(name='calls&puts', aliases=[], description='', deprecated=False),
+            MetricDef(name='expirationDates', aliases=[], description='', deprecated=False),
+            MetricDef(name='ivPeriods', aliases=[], description='', deprecated=False),
+            MetricDef(name='surface', aliases=[], description='', deprecated=False),
+            MetricDef(name='surfaceForecast', aliases=[], description='', deprecated=False),
+            MetricDef(name='earnings', aliases=[], description='', deprecated=False),
+            MetricDef(name='ivRank', aliases=[], description='', deprecated=False),
+        ],
+        example='=SF_OPTIONS_PRO(symbol, dataType, expirationDate, strike, tradeDate, endDate, metrics, options)',
+        options=[],
+        notes='',
+        periods=[],
+        types=['calls', 'puts', 'calls&puts', 'expirationDates', 'ivPeriods', 'surface', 'surfaceForecast', 'earnings', 'ivRank'],
+    ),
     'SF_SCREEN': FunctionDef(
         signature='=SF_SCREEN(filters, metrics, options)',
+        parameters=['filters', 'metrics', 'options'],
+        selector_parameter='metrics',
         metrics=[
             MetricDef(name='marketCap', aliases=[], description='', deprecated=False),
             MetricDef(name='price', aliases=[], description='', deprecated=False),
@@ -228,6 +278,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_SPARK': FunctionDef(
         signature='=SF_SPARK(symbol, lastXdays, type)',
+        parameters=['symbol', 'lastXdays', 'type'],
+        selector_parameter='type',
         metrics=[
             MetricDef(name='price', aliases=[], description='', deprecated=False),
             MetricDef(name='volume', aliases=[], description='', deprecated=False),
@@ -240,6 +292,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_TECHNICAL': FunctionDef(
         signature='=SF_TECHNICAL(symbol, type, timeframe, startDate, endDate, options)',
+        parameters=['symbol', 'type', 'timeframe', 'startDate', 'endDate', 'options'],
+        selector_parameter='type',
         metrics=[
             MetricDef(name='sma', aliases=['sma', 'simple moving average'], description='', deprecated=False),
             MetricDef(name='ema', aliases=['ema', 'exponential moving average'], description='', deprecated=False),
@@ -259,6 +313,8 @@ OTHER_FUNCTIONS: Dict[str, FunctionDef] = {
     ),
     'SF_TIMESERIES': FunctionDef(
         signature='=SF_TIMESERIES(symbol, startDate, endDate, period, metric, options)',
+        parameters=['symbol', 'startDate', 'endDate', 'period', 'metric', 'options'],
+        selector_parameter='metric',
         metrics=[
             MetricDef(name='all', aliases=[], description='', deprecated=False),
             MetricDef(name='date', aliases=[], description='', deprecated=False),

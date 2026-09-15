@@ -33,6 +33,8 @@ class CategoryDef:
 @dataclass
 class FunctionDef:
     signature: str
+    parameters: List[str] = field(default_factory=list)
+    selector_parameter: str = ''
     metrics: List[MetricDef] = field(default_factory=list)
     example: str = ''
     options: List[str] = field(default_factory=list)

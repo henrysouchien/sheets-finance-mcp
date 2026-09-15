@@ -7,18 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from .sf_catalog import OTHER_FUNCTIONS, SF_CATEGORIES
 
-NON_SF_EXTRA_ARG_ORDER: Dict[str, List[str]] = {
-    "SF_TIMESERIES": ["startDate", "endDate", "period"],
-    "SF_DIVIDEND": ["startDate", "endDate"],
-    "SF_OPTIONS": ["expirationDate"],
-    "SF_CALENDAR": ["searchTerms", "startDate", "endDate"],
-    "SF_SPARK": ["lastXdays"],
-    "SF_TECHNICAL": ["timeframe", "startDate", "endDate"],
-    "SF_NEWS": ["limit", "site", "startDate", "endDate"],
-    "SF_SCREEN": ["filters", "metrics"],
-    "SF_MAP": ["type", "filter"],
-}
-
 NON_US_SUFFIXES: Tuple[str, ...] = (
     ".L",
     ".OL",
@@ -86,6 +74,14 @@ def _parse_symbols(symbol: str) -> List[str]:
     if not symbols:
         raise ValueError("symbol must include at least one ticker")
     return symbols
+
+
+def _parse_function_first_argument(value: str, parameter: str) -> List[str]:
+    if parameter in {"symbol", "symbol(s)"}:
+        return _parse_symbols(value)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{parameter} must be a non-empty string")
+    return [value.strip()]
 
 
 def _has_non_us_ticker_suffix(symbols: List[str]) -> bool:
@@ -161,6 +157,61 @@ def _validate_other_metric(function: str, metric: str) -> Optional[Dict[str, Any
     return None
 
 
+def _render_other_function_formulas(
+    function: str,
+    symbols: List[str],
+    selector_value: str,
+    options: str,
+    extra_args: Optional[Dict[str, Any]],
+) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+    function_def = OTHER_FUNCTIONS[function]
+    parameters = function_def.parameters
+    selector_parameter = function_def.selector_parameter
+    if not parameters or selector_parameter not in parameters:
+        return (
+            {
+                "status": "error",
+                "error": f"Function catalog contract is incomplete for '{function}'.",
+            },
+            [],
+        )
+
+    extra = {} if extra_args is None else extra_args
+    if not isinstance(extra, dict):
+        return {"status": "error", "error": "extra_args must be an object when provided"}, []
+
+    reserved_parameters = {parameters[0], selector_parameter}
+    if "options" in parameters:
+        reserved_parameters.add("options")
+    allowed_extra_args = [parameter for parameter in parameters if parameter not in reserved_parameters]
+    unexpected = sorted(set(extra) - set(allowed_extra_args))
+    if unexpected:
+        return (
+            {
+                "status": "error",
+                "error": f"Unknown extra_args for function '{function}': {unexpected}.",
+                "available_extra_args": allowed_extra_args,
+                "reserved_parameters": sorted(reserved_parameters),
+            },
+            [],
+        )
+
+    formulas: List[str] = []
+    for symbol in symbols:
+        values: List[Any] = []
+        for index, parameter in enumerate(parameters):
+            if index == 0:
+                values.append(symbol)
+            elif parameter == selector_parameter:
+                values.append(selector_value)
+            elif parameter == "options":
+                values.append(options)
+            else:
+                values.append(extra.get(parameter, ""))
+        formulas.append(_build_formula(function, values))
+    return None, formulas
+
+
 def sf_formula(
     symbol: str,
     metric_id: str = "",
@@ -173,8 +224,6 @@ def sf_formula(
 ) -> Dict[str, Any]:
     """Build and validate a SheetsFinance formula."""
     try:
-        symbols = _parse_symbols(symbol)
-
         parsed_function = function.strip() if isinstance(function, str) else "SF"
         parsed_category = category.strip() if isinstance(category, str) else ""
         parsed_metric = metric.strip() if isinstance(metric, str) else "all"
@@ -214,6 +263,7 @@ def sf_formula(
             parsed_metric = metric_name
 
         if parsed_function == "SF":
+            symbols = _parse_symbols(symbol)
             if not parsed_category:
                 return {
                     "status": "error",
@@ -257,18 +307,21 @@ def sf_formula(
             return validation_error
 
         function_def = OTHER_FUNCTIONS[parsed_function]
-        arg_order = NON_SF_EXTRA_ARG_ORDER.get(parsed_function, [])
-        extra = extra_args or {}
-        if not isinstance(extra, dict):
-            return {"status": "error", "error": "extra_args must be an object when provided"}
-
-        formula_values: List[Any] = [None, parsed_metric]
-        for key in arg_order:
-            formula_values.append(extra.get(key, ""))
-        if options:
-            formula_values.append(options)
-
-        formulas = [_build_formula(parsed_function, [sym, *formula_values[1:]]) for sym in symbols]
+        if not function_def.parameters:
+            return {
+                "status": "error",
+                "error": f"Function catalog contract is incomplete for '{parsed_function}'.",
+            }
+        symbols = _parse_function_first_argument(symbol, function_def.parameters[0])
+        render_error, formulas = _render_other_function_formulas(
+            parsed_function,
+            symbols,
+            parsed_metric,
+            options,
+            extra_args,
+        )
+        if render_error:
+            return render_error
         base = {
             "status": "ok",
             "function": parsed_function,
@@ -333,6 +386,8 @@ def sf_describe(target: str) -> Dict[str, Any]:
             "status": "ok",
             "function": function_name,
             "signature": function_def.signature,
+            "parameters": function_def.parameters,
+            "selector_parameter": function_def.selector_parameter,
             "metric_count": len(metrics),
             "metrics": metrics,
             "example": function_def.example,

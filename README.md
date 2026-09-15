@@ -73,3 +73,9 @@ sheets-finance-mcp
    sf_describe(target="income")
    ```
 
+For a non-`SF` function, `symbol` supplies the function signature's first
+argument, while the selected `metric_id` supplies the cataloged selector
+parameter. Pass all remaining named parameters through `extra_args`. For
+example, `SF_OPTIONS_PRO.calls` selects `dataType="calls"`, while
+`SF_BROKERAGE.holdings` selects `type="holdings"`; in the latter case `symbol`
+contains the brokerage account nickname rather than a market ticker.

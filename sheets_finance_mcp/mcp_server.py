@@ -138,15 +138,19 @@ def sf_formula(
     Discovery: run sf_search to choose an exact metric_id or run sf_describe to
     inspect a category/function before building the formula. For SF metrics,
     pass symbol plus either metric_id or category/metric; for non-SF functions,
-    pass function and the required function-specific options.
+    pass function and the required function-specific options. For non-SF
+    functions, symbol supplies the first documented parameter (for example
+    symbol, searchTerms, filters, code, or account); extra_args supplies the
+    remaining named parameters.
 
     Sibling tools: use sf_search for fuzzy lookup and sf_describe for the full
     metric/function menu. Use gsheets-mcp tools only after this returns a
     formula that should be written to a spreadsheet.
 
-    Common mistake: symbol is a market ticker, not a spreadsheet cell. This
-    tool returns formula text and validation details; it does not update a
-    sheet.
+    Common mistake: symbol is the first formula argument, not a spreadsheet
+    cell. It is usually a ticker, but some non-SF functions expect search terms,
+    filters, an identifier code, or a brokerage account nickname. This tool
+    returns formula text and validation details; it does not update a sheet.
     """
     try:
         return _normalize_error_result(
